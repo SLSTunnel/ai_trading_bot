@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Trading Bot Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gradient: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .banner {
+            background: var(--gradient);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') center/cover;
+            opacity: 0.1;
+            z-index: 0;
+        }
+        
+        .banner-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 1.5rem;
+            background: white;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background: var(--primary);
+            color: white;
+            border-bottom: none;
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 10px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+        
+        .stat-card h2 {
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+        
+        .stat-card p {
+            opacity: 0.9;
+            margin: 0;
+        }
+        
+        .positive {
+            color: var(--success);
+            font-weight: 600;
+        }
+        
+        .negative {
+            color: var(--danger);
+            font-weight: 600;
+        }
+        
+        .trade-row {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s ease;
+        }
+        
+        .trade-row:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            border: none;
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-warning {
+            background: #f39c12;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+            text-align: center;
+        }
+        
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .footer-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--light);
+        }
+        
+        .footer-tagline {
+            opacity: 0.8;
+            margin-bottom: 1.5rem;
+        }
+        
+        .social-links {
+            margin-top: 1rem;
+        }
+        
+        .social-links a {
+            color: white;
+            margin: 0 10px;
+            font-size: 1.2rem;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            opacity: 1;
+            text-decoration: none;
+        }
+        
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Banner Section -->
+    <header class="banner mb-4">
+        <div class="container">
+            <div class="banner-content text-center text-white py-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div></div> <!-- Empty div for spacing -->
+                    <h1 class="display-4 fw-bold">AI Trading Bot Dashboard</h1>
+                    <button class="btn btn-outline-light btn-sm" id="settingsButton">
+                        <i class="fas fa-cog me-1"></i> Settings
+                    </button>
+                </div>
+                <p class="lead">Advanced algorithmic trading powered by AI and machine learning</p>
+                <div class="mt-4">
+                    <span class="badge bg-success me-2"><i class="fas fa-circle me-1"></i> Live Trading</span>
+                    <span class="badge bg-primary"><i class="fas fa-robot me-1"></i> AI-Powered</span>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="settingsModalLabel">
+                        <i class="fas fa-cog me-2"></i> Trading Account Settings
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="mt5SettingsForm">
+                        <div class="mb-3">
+                            <label for="mt5Login" class="form-label">MT5 Account Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input type="number" class="form-control" id="mt5Login" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="mt5Password" class="form-label">MT5 Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="mt5Password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Your password is stored securely and never leaves your server.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="mt5Server" class="form-label">MT5 Server</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-server"></i></span>
+                                <input type="text" class="form-control" id="mt5Server" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tradingSymbols" class="form-label">Trading Pairs</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-chart-line"></i></span>
+                                <input type="text" class="form-control" id="tradingSymbols" required>
+                            </div>
+                            <div class="form-text">Separate symbols with commas (e.g., EURUSD,GBPUSD,USDJPY)</div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="riskPercent" class="form-label">Risk per Trade (%)</label>
+                                    <input type="number" class="form-control" id="riskPercent" min="0.1" max="5" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="timeframe" class="form-label">Timeframe</label>
+                                    <select class="form-select" id="timeframe" required>
+                                        <option value="M1">M1</option>
+                                        <option value="M5">M5</option>
+                                        <option value="M15">M15</option>
+                                        <option value="M30">M30</option>
+                                        <option value="H1" selected>H1</option>
+                                        <option value="H4">H4</option>
+                                        <option value="D1">D1</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning mt-3" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Changing these settings will restart the trading bot.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-1"></i> Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="saveSettings">
+                                <i class="fas fa-save me-1"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="dashboard">
+        <!-- Content will be loaded by Dash -->
+        <div id="react-entry-point" class="fade-in">
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 fs-5">Initializing trading dashboard...</p>
+                <div class="progress mt-3" style="height: 6px; max-width: 300px; margin: 0 auto;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 75%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Connect to Socket.IO
+        const socket = io();
+        
+        // Initialize Bootstrap components
+        let settingsModal = null;
+        
+        // Load settings when the page loads
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const settings = data.settings;
+                    document.getElementById('mt5Login').value = settings.mt5.login || '';
+                    document.getElementById('mt5Password').value = settings.mt5.password || '';
+                    document.getElementById('mt5Server').value = settings.mt5.server || '';
+                    document.getElementById('tradingSymbols').value = settings.trading.symbols.join(', ');
+                    document.getElementById('riskPercent').value = settings.trading.max_risk_percent || 1.0;
+                    document.getElementById('timeframe').value = settings.trading.timeframe || 'H1';
+                } else {
+                    showAlert('Failed to load settings: ' + (data.message || 'Unknown error'), 'danger');
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                showAlert('Failed to load settings. Please check the console for details.', 'danger');
+            }
+        }
+        
+        // Save settings and handle response
+        async function saveSettings(event) {
+            event.preventDefault();
+            
+            const saveButton = document.getElementById('saveSettings');
+            const originalText = saveButton.innerHTML;
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+            
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mt5_login: document.getElementById('mt5Login').value,
+                        mt5_password: document.getElementById('mt5Password').value,
+                        mt5_server: document.getElementById('mt5Server').value,
+                        symbols: document.getElementById('tradingSymbols').value,
+                        risk_percent: document.getElementById('riskPercent').value,
+                        timeframe: document.getElementById('timeframe').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Show success message
+                    showAlert('Settings saved successfully! Reconnecting to MT5...', 'success');
+                    
+                    // Hide the modal
+                    if (settingsModal) {
+                        const modal = bootstrap.Modal.getInstance(settingsModal);
+                        if (modal) modal.hide();
+                    }
+                    
+                    // If reload is requested, refresh the page
+                    if (data.reload) {
+                        // Wait a moment for the user to see the success message
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1500);
+                    }
+                } else {
+                    showAlert('Failed to save settings: ' + (data.message || 'Unknown error'), 'danger');
+                }
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                showAlert('Failed to save settings. Please check the console for details.', 'danger');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.innerHTML = originalText;
+            }
+        }
+        
+        // Show alert message
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                const bsAlert = new bootstrap.Alert(alertDiv);
+                bsAlert.close();
+            }, 5000);
+        }
+        
+        // Toggle password visibility
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('mt5Password');
+            const toggleButton = document.getElementById('togglePassword');
+            const icon = toggleButton.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize modals
+            settingsModal = new bootstrap.Modal(document.getElementById('settingsModal'));
+            
+            // Set up event listeners
+            document.getElementById('settingsButton').addEventListener('click', () => {
+                loadSettings();
+                settingsModal.show();
+            });
+            
+            document.getElementById('mt5SettingsForm').addEventListener('submit', saveSettings);
+            document.getElementById('togglePassword').addEventListener('click', togglePasswordVisibility);
+            
+            // Connect to Socket.IO
+            socket.emit('get_initial_data');
+            
+            // Set up auto-refresh
+            setInterval(() => {
+                socket.emit('update_dashboard');
+            }, 5000);
+        });
+        
+        // Socket.IO event handlers
+        socket.on('dashboard_data', function(data) {
+            const balanceElement = document.getElementById('balance-display');
+            const tradesElement = document.getElementById('active-trades');
+            const winRateElement = document.getElementById('win-rate');
+            const dailyPLelement = document.getElementById('daily-pl');
+            
+            if (balanceElement) balanceElement.textContent = data.balance;
+            if (tradesElement) tradesElement.textContent = data.active_trades;
+            if (winRateElement) winRateElement.textContent = data.win_rate;
+            if (dailyPLelement) dailyPLelement.textContent = data.daily_pl;
+            
+            // Add animation to updated elements
+            [balanceElement, tradesElement, winRateElement, dailyPLelement].forEach(el => {
+                if (el) el.classList.add('pulse');
+                setTimeout(() => {
+                    if (el) el.classList.remove('pulse');
+                }, 1000);
+            });
+        });
+        
+        socket.on('update_trades', function(data) {
+            const tradesTable = document.getElementById('trades-table');
+            if (!tradesTable) return;
+            
+            if (data.trades.length === 0) {
+                tradesTable.innerHTML = '<p class="text-muted text-center py-3">No active trades</p>';
+                return;
+            }
+            
+            let html = '<div class="trades-list">';
+            data.trades.forEach(trade => {
+                const profitClass = trade.profit >= 0 ? 'positive' : 'negative';
+                const profitSign = trade.profit >= 0 ? '+' : '';
+                const profitValue = trade.profit.toFixed(2);
+                
+                html += `
+                    <div class="trade-row">
+                        <span><strong>${trade.symbol}</strong> ${trade.type}</span>
+                        <span>${trade.volume} @ ${trade.open_price}</span>
+                        <span>Now: ${trade.current_price}</span>
+                        <span class="${profitClass}">${profitSign}${profitValue}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            tradesTable.innerHTML = html;
+        });
+        
+        socket.on('update_chart', function(data) {
+            if (typeof Plotly !== 'undefined') {
+                Plotly.react('balance-chart', data.chart.data, data.chart.layout);
+            }
+        });
+    </script>
+    <!-- Footer -->
+    <footer class="footer mt-5">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">[Emperor]DevSupport</div>
+                <p class="footer-tagline">Advanced Trading Solutions for Modern Traders</p>
+                <div class="social-links">
+                    <a href="#" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="#" target="_blank" title="Discord"><i class="fab fa-discord"></i></a>
+                    <a href="#" target="_blank" title="Telegram"><i class="fab fa-telegram"></i></a>
+                </div>
+                <div class="mt-4 text-muted small">
+                    &copy; 2025 [Emperor]DevSupport. All rights reserved.<br>
+                    <span class="d-block mt-2">For traders, by traders.</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Add animation classes on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate stats cards
+            const stats = document.querySelectorAll('.stat-card');
+            stats.forEach((stat, index) => {
+                setTimeout(() => {
+                    stat.classList.add('animate__animated', 'animate__fadeInUp');
+                }, 100 * index);
+            });
+            
+            // Add pulse animation to important elements
+            const importantElements = document.querySelectorAll('.pulse-on-update');
+            importantElements.forEach(el => {
+                el.addEventListener('DOMSubtreeModified', function() {
+                    this.classList.add('pulse');
+                    setTimeout(() => this.classList.remove('pulse'), 2000);
+                });
+            });
+            
+            // Smooth scroll for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
