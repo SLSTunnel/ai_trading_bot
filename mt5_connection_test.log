@@ -1,0 +1,10 @@
+2025-09-21 09:55:43,580 - MT5_Connection_Test - INFO - Starting MT5 Connection Test
+2025-09-21 09:55:43,586 - MT5_Connection_Test - INFO - Attempting to initialize MT5...
+2025-09-21 09:55:44,340 - MT5_Connection_Test - ERROR - MT5 initialization failed: (-6, 'Terminal: Authorization failed')
+2025-09-21 09:55:44,340 - MT5_Connection_Test - INFO - MT5 connection closed
+2025-09-21 09:55:44,340 - MT5_Connection_Test - ERROR - MT5 connection test failed
+2025-09-21 09:59:51,205 - MT5_Connection_Test - INFO - Starting MT5 Connection Test
+2025-09-21 09:59:51,209 - MT5_Connection_Test - INFO - Attempting to initialize MT5...
+2025-09-21 09:59:51,268 - MT5_Connection_Test - ERROR - MT5 initialization failed: (-6, 'Terminal: Authorization failed')
+2025-09-21 09:59:51,268 - MT5_Connection_Test - INFO - MT5 connection closed
+2025-09-21 09:59:51,268 - MT5_Connection_Test - ERROR - MT5 connection test failed
