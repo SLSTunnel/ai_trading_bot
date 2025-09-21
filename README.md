@@ -28,7 +28,7 @@ An advanced algorithmic trading system that leverages machine learning and techn
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/ai-trading-bot.git
+   git clone https://github.com/SLSTunnel//ai-trading-bot.git
    cd ai-trading-bot
    ```
 
